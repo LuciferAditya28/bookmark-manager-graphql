@@ -1,11 +1,33 @@
 import { GraphQLScalarType, Kind, GraphQLError } from 'graphql';
-import { ValidationError } from '../validation/index.ts';
+import { ValidationError, NotFoundError } from '../validation/index.ts';
 import {
   getFolders,
   getFolderById,
   createFolder,
   getBookmarksForFolder,
 } from '../services/folder.service.ts';
+import {
+  createBookmark,
+  updateBookmark,
+  deleteBookmark,
+  moveBookmark,
+  type CreateBookmarkInput,
+  type UpdateBookmarkInput,
+} from '../services/bookmark.service.ts';
+
+const handleResolverError = (err: unknown): never => {
+  if (err instanceof ValidationError) {
+    throw new GraphQLError(err.message, {
+      extensions: { code: 'BAD_USER_INPUT' },
+    });
+  }
+  if (err instanceof NotFoundError) {
+    throw new GraphQLError(err.message, {
+      extensions: { code: 'NOT_FOUND' },
+    });
+  }
+  throw err;
+};
 
 export const DateTimeResolver = new GraphQLScalarType({
   name: 'DateTime',
@@ -43,6 +65,17 @@ export const resolvers = {
       return getBookmarksForFolder(parent.id);
     },
   },
+  Bookmark: {
+    folder: async (parent: { folderId: string }) => {
+      const folder = await getFolderById(parent.folderId);
+      if (!folder) {
+        throw new GraphQLError(`Folder with ID "${parent.folderId}" not found`, {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+      return folder;
+    },
+  },
   Query: {
     folders: async () => {
       return getFolders();
@@ -61,25 +94,36 @@ export const resolvers = {
       try {
         return await createFolder(args.name);
       } catch (err) {
-        if (err instanceof ValidationError) {
-          throw new GraphQLError(err.message, {
-            extensions: { code: 'BAD_USER_INPUT' },
-          });
-        }
-        throw err;
+        return handleResolverError(err);
       }
     },
-    createBookmark: () => {
-      throw new Error('Not implemented');
+    createBookmark: async (_: unknown, args: { input: CreateBookmarkInput }) => {
+      try {
+        return await createBookmark(args.input);
+      } catch (err) {
+        return handleResolverError(err);
+      }
     },
-    updateBookmark: () => {
-      throw new Error('Not implemented');
+    updateBookmark: async (_: unknown, args: { id: string; input: UpdateBookmarkInput }) => {
+      try {
+        return await updateBookmark(args.id, args.input);
+      } catch (err) {
+        return handleResolverError(err);
+      }
     },
-    deleteBookmark: () => {
-      throw new Error('Not implemented');
+    deleteBookmark: async (_: unknown, args: { id: string }) => {
+      try {
+        return await deleteBookmark(args.id);
+      } catch (err) {
+        return handleResolverError(err);
+      }
     },
-    moveBookmark: () => {
-      throw new Error('Not implemented');
+    moveBookmark: async (_: unknown, args: { id: string; folderId: string }) => {
+      try {
+        return await moveBookmark(args.id, args.folderId);
+      } catch (err) {
+        return handleResolverError(err);
+      }
     },
   },
 };

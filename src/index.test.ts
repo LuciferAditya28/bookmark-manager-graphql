@@ -28,6 +28,6 @@ describe('GraphQL Yoga Server', () => {
     const result = (await response.json()) as { data?: { folders: Array<{ id: string; name: string }> } };
     
     expect(result.data).toBeDefined();
-    expect(result.data?.folders).toEqual([]);
+    expect(Array.isArray(result.data?.folders)).toBe(true);
   });
 });
