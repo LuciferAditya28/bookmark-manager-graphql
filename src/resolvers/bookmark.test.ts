@@ -1113,4 +1113,62 @@ describe('GraphQL Bookmark Resolvers', () => {
     expect(result.data?.bookmarks?.hasNextPage).toBe(false);
     expect(result.data?.bookmarks?.nextCursor).toBeNull();
   });
+
+  it('bookmarks search with no matching titles returns empty nodes list', async () => {
+    const response = await yoga.fetch('http://localhost/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `
+          query {
+            bookmarks(search: "does-not-exist-at-all-abc-xyz") {
+              nodes {
+                id
+                title
+              }
+              nextCursor
+              hasNextPage
+            }
+          }
+        `,
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const result = (await response.json()) as BookmarksQueryResponse;
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.bookmarks?.nodes).toEqual([]);
+    expect(result.data?.bookmarks?.nextCursor).toBeNull();
+    expect(result.data?.bookmarks?.hasNextPage).toBe(false);
+  });
+
+  it('bookmarks pagination with no results returns empty connection structure', async () => {
+    const oldCursor = encodeCursor(new Date('2000-01-01T00:00:00Z'), 'some-id');
+    const response = await yoga.fetch('http://localhost/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `
+          query GetEmptyP($cursor: String!) {
+            bookmarks(cursor: $cursor) {
+              nodes {
+                id
+                title
+              }
+              nextCursor
+              hasNextPage
+            }
+          }
+        `,
+        variables: { cursor: oldCursor },
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const result = (await response.json()) as BookmarksQueryResponse;
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.bookmarks?.nodes).toEqual([]);
+    expect(result.data?.bookmarks?.nextCursor).toBeNull();
+    expect(result.data?.bookmarks?.hasNextPage).toBe(false);
+  });
 });

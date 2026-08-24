@@ -249,4 +249,38 @@ describe('GraphQL Folder Resolvers', () => {
     expect(result.data?.folder?.bookmarks?.[0]?.url).toBe('https://google.com');
     expect(result.data?.folder?.bookmarks?.[0]?.tags).toEqual(['search']);
   });
+
+  it('Folder.bookmarks returns [] when the folder has no bookmarks', async () => {
+    const response = await yoga.fetch('http://localhost/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `
+          query GetFolderWithBookmarks($id: ID!) {
+            folder(id: $id) {
+              id
+              bookmarks {
+                id
+                title
+              }
+            }
+          }
+        `,
+        variables: { id: 'folder-2' }, // folder-2 has no bookmarks in mock data
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const result = (await response.json()) as {
+      data?: {
+        folder?: {
+          id: string;
+          bookmarks?: Array<{ id: string; title: string }>;
+        } | null;
+      };
+      errors?: Array<{ message: string }>;
+    };
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.folder?.bookmarks).toEqual([]);
+  });
 });
