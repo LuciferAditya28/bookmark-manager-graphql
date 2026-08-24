@@ -1,4 +1,11 @@
-import { GraphQLScalarType, Kind } from 'graphql';
+import { GraphQLScalarType, Kind, GraphQLError } from 'graphql';
+import { ValidationError } from '../validation/index.ts';
+import {
+  getFolders,
+  getFolderById,
+  createFolder,
+  getBookmarksForFolder,
+} from '../services/folder.service.ts';
 
 export const DateTimeResolver = new GraphQLScalarType({
   name: 'DateTime',
@@ -31,9 +38,18 @@ export const DateTimeResolver = new GraphQLScalarType({
 
 export const resolvers = {
   DateTime: DateTimeResolver,
+  Folder: {
+    bookmarks: async (parent: { id: string }) => {
+      return getBookmarksForFolder(parent.id);
+    },
+  },
   Query: {
-    folders: () => [],
-    folder: () => null,
+    folders: async () => {
+      return getFolders();
+    },
+    folder: async (_: unknown, args: { id: string }) => {
+      return getFolderById(args.id);
+    },
     bookmarks: () => ({
       nodes: [],
       nextCursor: null,
@@ -41,8 +57,17 @@ export const resolvers = {
     }),
   },
   Mutation: {
-    createFolder: () => {
-      throw new Error('Not implemented');
+    createFolder: async (_: unknown, args: { name: string }) => {
+      try {
+        return await createFolder(args.name);
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          throw new GraphQLError(err.message, {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
+        throw err;
+      }
     },
     createBookmark: () => {
       throw new Error('Not implemented');

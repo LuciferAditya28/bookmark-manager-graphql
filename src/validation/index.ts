@@ -1,2 +1,7 @@
-// Request and data validation schemas will be defined here
-export const validationPlaceholder = (): string => 'validation';
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+    Object.setPrototypeOf(this, ValidationError.prototype);
+  }
+}
