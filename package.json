@@ -10,6 +10,7 @@
     "lint": "eslint src",
     "test": "bun test",
     "gendb": "prisma migrate deploy && prisma generate",
+    "sanity": "bun run lint && bun run typecheck && bun test",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
