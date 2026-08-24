@@ -1,10 +1,33 @@
-import { describe, it, expect, mock } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { createYoga, createSchema } from 'graphql-yoga';
 import { typeDefs } from '../schema/typeDefs.ts';
 import { resolvers } from './index.ts';
 import { ValidationError } from '../validation/index.ts';
 
-// Mock the service layer module using Bun's mock.module
+interface FolderMock {
+  id: string;
+  name: string;
+  createdAt: Date;
+}
+
+interface BookmarkMock {
+  id: string;
+  title: string;
+  url: string;
+  tags: string[];
+  folderId: string;
+  createdAt: Date;
+}
+
+interface GlobalWithMocks {
+  mockFolderService?: {
+    getFolders: () => Promise<FolderMock[]>;
+    getFolderById: (id: string) => Promise<FolderMock | null>;
+    createFolder: (name: string) => Promise<FolderMock>;
+    getBookmarksForFolder: (folderId: string) => Promise<BookmarkMock[]>;
+  };
+}
+
 const mockFolders = [
   { id: 'folder-1', name: 'Folder 1', createdAt: new Date('2026-08-24T10:00:00Z') },
   { id: 'folder-2', name: 'Folder 2', createdAt: new Date('2026-08-24T11:00:00Z') },
@@ -14,8 +37,8 @@ const mockBookmarks = [
   { id: 'bookmark-1', title: 'Google', url: 'https://google.com', tags: ['search'], folderId: 'folder-1', createdAt: new Date('2026-08-24T10:05:00Z') },
 ];
 
-mock.module('../services/folder.service.ts', () => {
-  return {
+beforeAll(() => {
+  (globalThis as unknown as GlobalWithMocks).mockFolderService = {
     getFolders: async () => mockFolders,
     getFolderById: async (id: string) => {
       const folder = mockFolders.find(f => f.id === id);
@@ -32,6 +55,11 @@ mock.module('../services/folder.service.ts', () => {
       return mockBookmarks.filter(b => b.folderId === folderId);
     },
   };
+});
+
+afterAll(() => {
+  const g = globalThis as unknown as Record<string, unknown>;
+  delete g.mockFolderService;
 });
 
 const yoga = createYoga({

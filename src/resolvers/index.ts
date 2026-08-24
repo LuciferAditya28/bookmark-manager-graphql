@@ -11,8 +11,10 @@ import {
   updateBookmark,
   deleteBookmark,
   moveBookmark,
+  getBookmarksPaginated,
   type CreateBookmarkInput,
   type UpdateBookmarkInput,
+  type GetBookmarksArgs,
 } from '../services/bookmark.service.ts';
 
 const handleResolverError = (err: unknown): never => {
@@ -83,11 +85,13 @@ export const resolvers = {
     folder: async (_: unknown, args: { id: string }) => {
       return getFolderById(args.id);
     },
-    bookmarks: () => ({
-      nodes: [],
-      nextCursor: null,
-      hasNextPage: false,
-    }),
+    bookmarks: async (_: unknown, args: GetBookmarksArgs) => {
+      try {
+        return await getBookmarksPaginated(args);
+      } catch (err) {
+        return handleResolverError(err);
+      }
+    },
   },
   Mutation: {
     createFolder: async (_: unknown, args: { name: string }) => {
