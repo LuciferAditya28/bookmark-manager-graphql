@@ -1,0 +1,56 @@
+scalar DateTime
+
+type Folder {
+  id: ID!
+  name: String!
+  createdAt: DateTime!
+  bookmarks: [Bookmark!]!
+}
+
+type Bookmark {
+  id: ID!
+  title: String!
+  url: String!
+  tags: [String!]!
+  folderId: ID!
+  folder: Folder!
+  createdAt: DateTime!
+}
+
+type BookmarkConnection {
+  nodes: [Bookmark!]!
+  nextCursor: String
+  hasNextPage: Boolean!
+}
+
+input CreateBookmarkInput {
+  title: String!
+  url: String!
+  folderId: ID!
+  tags: [String!]
+}
+
+input UpdateBookmarkInput {
+  title: String
+  url: String
+  tags: [String!]
+}
+
+type Query {
+  folders: [Folder!]!
+  folder(id: ID!): Folder
+  bookmarks(
+    folderId: ID
+    search: String
+    take: Int
+    cursor: String
+  ): BookmarkConnection!
+}
+
+type Mutation {
+  createFolder(name: String!): Folder!
+  createBookmark(input: CreateBookmarkInput!): Bookmark!
+  updateBookmark(id: ID!, input: UpdateBookmarkInput!): Bookmark!
+  deleteBookmark(id: ID!): Bookmark!
+  moveBookmark(id: ID!, folderId: ID!): Bookmark!
+}
